@@ -104,25 +104,8 @@ From the actual 2026 dataset:
 └── requirements.txt                    # Python dependencies
 ```
 
----
 
-## 🚀 How to Run the Project
 
-### 1. Python Environment Setup & Execution
-```bash
-# Clone the repository
-git clone https://github.com/example/2026-job-market-analysis.git
-cd 2026-job-market-analysis
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run Step 1: Data Inspection
-python scripts/inspect_jobs.py
-
-# Run Step 2-7: Data Cleaning & Transformation Pipeline
-python scripts/clean_jobs.py
-```
 
 ### 2. Microsoft Power BI Setup
 1. Open **Microsoft Power BI Desktop**.
