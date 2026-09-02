@@ -1,0 +1,113 @@
+{
+  "dataset_name": "2026 Global All-Industry Job Dataset",
+  "dataset_date_range": "2026-01-01 to 2026-08-30",
+  "total_jobs": 12000,
+  "total_companies": 54,
+  "total_locations": 38,
+  "total_countries": 8,
+  "ai_jobs": 596,
+  "ai_job_percentage": 4.97,
+  "non_ai_jobs": 11404,
+  "non_ai_job_percentage": 95.03,
+  "remote_jobs": 4578,
+  "remote_job_percentage": 38.15,
+  "hybrid_job_percentage": 36.4,
+  "onsite_job_percentage": 25.45,
+  "salary_disclosure_percentage": 68.55,
+  "salary_records_count": 8226,
+  "overall_average_salary_usd": 178573.61,
+  "overall_median_salary_usd": 158500.0,
+  "ai_average_salary_usd": 249305.15,
+  "ai_median_salary_usd": 238500.0,
+  "non_ai_average_salary_usd": 174882.32,
+  "non_ai_median_salary_usd": 153000.0,
+  "ai_salary_premium_pct": 42.56,
+  "top_category": "Technology",
+  "top_category_share_pct": 19.22,
+  "category_distribution": {
+    "Technology": 19.22,
+    "Data & AI": 9.9,
+    "Operations": 9.61,
+    "Finance": 8.21,
+    "Sales": 7.99,
+    "Marketing": 7.87,
+    "Human Resources": 5.62,
+    "Accounting": 5.48,
+    "Engineering": 5.05,
+    "Product": 4.54,
+    "Healthcare": 4.21,
+    "Management": 3.39,
+    "Design": 2.65,
+    "Customer Support": 2.56,
+    "Legal": 1.98,
+    "Administration": 1.73
+  },
+  "seniority_distribution": {
+    "Mid Level": 28.75,
+    "Senior": 24.06,
+    "Manager": 13.77,
+    "Director": 8.18,
+    "Entry Level": 8.18,
+    "Lead": 7.59,
+    "Executive": 5.03,
+    "Junior": 3.65,
+    "Internship": 0.8
+  },
+  "top_country": "United States",
+  "top_country_share_pct": 64.62,
+  "top_skill": "Communication",
+  "top_skill_count": 12000,
+  "top_skill_percentage": 100.0,
+  "top_10_skills": [
+    {
+      "skill": "Communication",
+      "count": 12000,
+      "pct_of_jobs": 100.0
+    },
+    {
+      "skill": "Leadership",
+      "count": 4067,
+      "pct_of_jobs": 33.9
+    },
+    {
+      "skill": "Excel",
+      "count": 3105,
+      "pct_of_jobs": 25.9
+    },
+    {
+      "skill": "Git",
+      "count": 2548,
+      "pct_of_jobs": 21.2
+    },
+    {
+      "skill": "Python",
+      "count": 2450,
+      "pct_of_jobs": 20.4
+    },
+    {
+      "skill": "Project Management",
+      "count": 2144,
+      "pct_of_jobs": 17.9
+    },
+    {
+      "skill": "SQL",
+      "count": 2037,
+      "pct_of_jobs": 17.0
+    },
+    {
+      "skill": "Salesforce",
+      "count": 1401,
+      "pct_of_jobs": 11.7
+    },
+    {
+      "skill": "AWS",
+      "count": 1355,
+      "pct_of_jobs": 11.3
+    },
+    {
+      "skill": "Docker",
+      "count": 1272,
+      "pct_of_jobs": 10.6
+    }
+  ]
+}

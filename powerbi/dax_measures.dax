@@ -1,0 +1,211 @@
+// ==============================================================================
+// 2026 GLOBAL JOB MARKET ANALYSIS - CORE DAX MEASURES
+// Clean, optimized DAX measures designed for FactJobs and DimSkill in Power BI
+// ==============================================================================
+
+// ------------------------------------------------------------------------------
+// 1. VOLUME & CARDINALITY MEASURES
+// ------------------------------------------------------------------------------
+
+Total Jobs = 
+COUNTROWS('FactJobs')
+/*
+  What it calculates : Total count of distinct job postings in the current filter context.
+  Why we need it     : Foundational KPI measure across all 5 dashboard pages.
+  Where used in PBI  : Page 1-5 Top KPI Cards, category matrix, and location heatmaps.
+*/
+
+Total Companies = 
+DISTINCTCOUNT('FactJobs'[Company])
+/*
+  What it calculates : Count of distinct employers actively hiring.
+  Why we need it     : Quantifies employer diversity and corporate market breadth.
+  Where used in PBI  : Page 1 KPI Card, Page 2 Company hiring leaderboard.
+*/
+
+Total Locations = 
+DISTINCTCOUNT('FactJobs'[Location])
+/*
+  What it calculates : Number of unique geographical hiring hubs/cities represented.
+  Why we need it     : Displays geographic market reach and distribution density.
+  Where used in PBI  : Page 1 KPI Card, Page 1 Country/Location decomposition tree.
+*/
+
+Total Countries = 
+DISTINCTCOUNT('FactJobs'[Country])
+/*
+  What it calculates : Number of distinct sovereign nations with active postings.
+  Why we need it     : Shows global reach of the 2026 dataset.
+  Where used in PBI  : Page 1 Slicer header & Geographic drill-down.
+*/
+
+
+// ------------------------------------------------------------------------------
+// 2. REMOTE WORKPLACE MEASURES
+// ------------------------------------------------------------------------------
+
+Remote Jobs = 
+CALCULATE(
+    [Total Jobs],
+    'FactJobs'[Is_Remote] = "Yes"
+)
+/*
+  What it calculates : Count of fully remote job postings.
+  Why we need it     : Isolates the remote job market segment.
+  Where used in PBI  : Page 1 & Page 2 Remote Donut Chart and Workplace Breakdown.
+*/
+
+Remote Job % = 
+DIVIDE([Remote Jobs], [Total Jobs], 0)
+/*
+  What it calculates : Share of all postings that are 100% remote.
+  Why we need it     : Key benchmark metric to track post-2025 workplace flexibility trends.
+  Where used in PBI  : Page 1 & Page 2 KPI Cards (formatted as Percentage 0.0%).
+*/
+
+Hybrid Jobs = 
+CALCULATE(
+    [Total Jobs],
+    'FactJobs'[Workplace_Modality] = "Hybrid"
+)
+/*
+  What it calculates : Count of hybrid postings requiring partial office attendance.
+  Why we need it     : Distinguishes true remote from hybrid flexible models.
+  Where used in PBI  : Page 2 Workplace Modality 100% Stacked Bar.
+*/
+
+
+// ------------------------------------------------------------------------------
+// 3. AI VS OVERALL MARKET MEASURES
+// ------------------------------------------------------------------------------
+
+AI Jobs = 
+CALCULATE(
+    [Total Jobs],
+    'FactJobs'[Is_AI_Job] = "Yes"
+)
+/*
+  What it calculates : Volume of specialized AI/ML/LLM/GenAI job postings.
+  Why we need it     : Measures true AI footprint without diluting across generic software/data roles.
+  Where used in PBI  : Page 1 Summary Badge, Page 5 AI vs Market Header KPI.
+*/
+
+Non-AI Jobs = 
+CALCULATE(
+    [Total Jobs],
+    'FactJobs'[Is_AI_Job] = "No"
+)
+/*
+  What it calculates : Volume of non-AI roles (traditional engineering, marketing, finance, etc.).
+  Why we need it     : Comparative benchmark denominator.
+  Where used in PBI  : Page 5 AI vs Overall Comparative visual.
+*/
+
+AI Job % = 
+DIVIDE([AI Jobs], [Total Jobs], 0)
+/*
+  What it calculates : Proportion of AI jobs relative to the entire labor market.
+  Why we need it     : Directly answers whether AI dominates the job market or remains specialized.
+  Where used in PBI  : Page 5 Hero Gauge / KPI Card.
+*/
+
+
+// ------------------------------------------------------------------------------
+// 4. SALARY ANALYSIS MEASURES
+// ------------------------------------------------------------------------------
+
+Jobs With Salary = 
+CALCULATE(
+    [Total Jobs],
+    'FactJobs'[Has_Salary] = "Yes"
+)
+/*
+  What it calculates : Count of job postings disclosing explicit salary ranges.
+  Why we need it     : Establishes statistical validity sample size for compensation figures.
+  Where used in PBI  : Page 4 Salary Data Transparency Gauge.
+*/
+
+Salary Disclosure % = 
+DIVIDE([Jobs With Salary], [Total Jobs], 0)
+/*
+  What it calculates : Percentage of postings with published salary data.
+  Why we need it     : Contextualizes pay transparency compliance across regions in 2026.
+  Where used in PBI  : Page 4 Transparency Metric Card.
+*/
+
+Average Salary = 
+CALCULATE(
+    AVERAGE('FactJobs'[Salary_Avg_USD]),
+    'FactJobs'[Has_Salary] = "Yes"
+)
+/*
+  What it calculates : Arithmetic mean midpoint salary (in USD) across reporting jobs.
+  Why we need it     : Standard compensation benchmark.
+  Where used in PBI  : Page 4 Primary KPI Card, Category & Seniority Comparison charts.
+*/
+
+Median Salary = 
+CALCULATE(
+    MEDIAN('FactJobs'[Salary_Avg_USD]),
+    'FactJobs'[Has_Salary] = "Yes"
+)
+/*
+  What it calculates : 50th percentile midpoint salary in USD.
+  Why we need it     : Robust to high-end executive / outlier compensation skew.
+  Where used in PBI  : Page 4 Primary KPI Card and Salary Distribution Box Plot.
+*/
+
+AI Average Salary = 
+CALCULATE(
+    AVERAGE('FactJobs'[Salary_Avg_USD]),
+    'FactJobs'[Has_Salary] = "Yes",
+    'FactJobs'[Is_AI_Job] = "Yes"
+)
+/*
+  What it calculates : Mean salary for specialized AI/ML roles.
+  Why we need it     : Quantifies compensation for artificial intelligence talent.
+  Where used in PBI  : Page 5 Salary Premium Comparison.
+*/
+
+Non-AI Average Salary = 
+CALCULATE(
+    AVERAGE('FactJobs'[Salary_Avg_USD]),
+    'FactJobs'[Has_Salary] = "Yes",
+    'FactJobs'[Is_AI_Job] = "No"
+)
+/*
+  What it calculates : Mean salary for non-AI roles.
+  Why we need it     : Serves as baseline to calculate the AI wage premium.
+  Where used in PBI  : Page 5 Comparative Card.
+*/
+
+AI Salary Premium % = 
+DIVIDE([AI Average Salary] - [Non-AI Average Salary], [Non-AI Average Salary], 0)
+/*
+  What it calculates : Percentage salary markup commanded by AI positions over baseline jobs.
+  Why we need it     : Evaluates market valuation of AI skills in 2026.
+  Where used in PBI  : Page 5 Premium Callout Metric.
+*/
+
+
+// ------------------------------------------------------------------------------
+// 5. SKILL PENETRATION MEASURES (From DimSkills Bridge Table)
+// ------------------------------------------------------------------------------
+
+Skill Postings Count = 
+CALCULATE(
+    DISTINCTCOUNT('DimSkills'[job_id])
+)
+/*
+  What it calculates : Number of unique job postings mentioning a specific skill.
+  Why we need it     : Powers skill frequency rankings without double-counting jobs.
+  Where used in PBI  : Page 3 Top Skills Bar Chart and Category Skill Heatmap.
+*/
+
+Skill Penetration % = 
+DIVIDE([Skill Postings Count], [Total Jobs], 0)
+/*
+  What it calculates : Share of all market postings that require a particular skill.
+  Why we need it     : Normalizes skill demand across changing filter contexts.
+  Where used in PBI  : Page 3 Tooltips & Matrix Visuals.
+*/

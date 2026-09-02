@@ -1,0 +1,6 @@
+{
+  "name": "تحليلات سوق العمل",
+  "description": "تحليلات تفاعلية لبيانات التوظيف والمهارات ومؤشرات الأجور.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
