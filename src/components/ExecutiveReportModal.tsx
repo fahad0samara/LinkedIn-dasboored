@@ -168,8 +168,8 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
+    <div className="print-report-root fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs print:block print:bg-white print:p-0">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150 print:max-h-none print:overflow-visible print:rounded-none print:border-0 print:shadow-none">
         
         {/* Modal Toolbar (hidden on print) */}
         <div className="px-6 py-3.5 bg-slate-900 text-white flex items-center justify-between print:hidden">
@@ -253,7 +253,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('kpi_totalJobs')}</span>
-              <div className="text-2xl font-black text-slate-900 font-mono mt-1">
+              <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono mt-1 whitespace-nowrap leading-tight">
                 {totalJobs.toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US')}
               </div>
               <span className="text-[10px] text-slate-400 mt-0.5 block">{language === 'ar' ? 'إعلانات توظيف معلنة' : 'Open Postings Sample'}</span>
@@ -261,7 +261,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
 
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('kpi_avgSalary')}</span>
-              <div className="text-2xl font-black text-[#107c41] font-mono mt-1">
+              <div className="text-xl sm:text-2xl font-black text-[#107c41] font-mono mt-1 whitespace-nowrap leading-tight">
                 {formatSalary(overallAvgSalary, currency, { isArabic: language === 'ar' })}
               </div>
               <span className="text-[10px] text-slate-400 mt-0.5 block">{language === 'ar' ? 'متوسط الأجور السنوي' : 'Mean Market Benchmark'}</span>
@@ -269,7 +269,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
 
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('kpi_aiPremium')}</span>
-              <div className="text-2xl font-black text-[#e66c37] font-mono mt-1">
+              <div className="text-xl sm:text-2xl font-black text-[#e66c37] font-mono mt-1 whitespace-nowrap leading-tight">
                 +{aiSalaryPremium}%
               </div>
               <span className="text-[10px] text-slate-400 mt-0.5 block">{language === 'ar' ? 'فارق راتب الذكاء الاصطناعي' : 'Over baseline non-AI roles'}</span>
@@ -277,7 +277,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
 
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('kpi_remoteShare')}</span>
-              <div className="text-2xl font-black text-[#118dff] font-mono mt-1">
+              <div className="text-xl sm:text-2xl font-black text-[#118dff] font-mono mt-1 whitespace-nowrap leading-tight">
                 {remotePercentage}%
               </div>
               <span className="text-[10px] text-slate-400 mt-0.5 block">{language === 'ar' ? 'مرونة بيئة العمل' : 'Distributed workforce'}</span>

@@ -269,7 +269,7 @@ export const LiveJobSearchModal: React.FC<LiveJobSearchModalProps> = ({
 
                     <div className="text-right rtl:text-left shrink-0">
                       <div className="text-sm font-bold font-mono text-[#107c41]">
-                        {formatSalary(job.salaryAvg, currency, { isArabic: language === 'ar' })}
+                        {formatSalary(job.salary, currency, { isArabic: language === 'ar' })}
                       </div>
                       <span className="text-[10px] text-slate-400 block">{language === 'ar' ? 'الراتب المقدر' : 'Estimated Annual'}</span>
                       {job.url && (

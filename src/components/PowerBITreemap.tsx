@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { CATEGORY_DATA, COUNTRY_DATA, METRICS_DATA } from '../data/jobData';
+import { CATEGORY_DATA, COUNTRY_DATA } from '../data/jobData';
+import type { JobRecord } from '../types';
 import { Language, useTranslation, translateCategory, translateCountry } from '../utils/i18n';
 import { CurrencyCode, formatSalary } from '../utils/currency';
 
@@ -56,6 +57,10 @@ interface PowerBITreemapProps {
   }) => void;
   language?: Language;
   currency?: CurrencyCode;
+  categoryData?: Array<{ category: string; jobs: number; share: number; avgSalary: number; remotePct?: number; aiPct?: number }>;
+  countryData?: Array<{ country: string; jobs: number; share: number; avgSalary: number; remotePct?: number; aiPct?: number }>;
+  records?: JobRecord[];
+  totalJobs?: number;
 }
 
 // Squarified Treemap Algorithm (Bruls, Huizing, van Wijk)
@@ -186,6 +191,10 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
   onDrillThrough,
   language = 'ar',
   currency = 'USD',
+  categoryData,
+  countryData,
+  records = [],
+  totalJobs = records.length,
 }) => {
   const { t } = useTranslation(language);
   const [activeMode, setActiveMode] = useState<'category' | 'country' | 'cross'>(mode);
@@ -196,7 +205,13 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
 
   // Update dimensions on resize
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const measure = () => {
+      const width = container.clientWidth;
+      if (width > 0) setDimensions({ width, height: height || 320 });
+    };
+    measure();
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         if (entry.contentRect.width > 0) {
@@ -207,14 +222,16 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
         }
       }
     });
-    observer.observe(containerRef.current);
+    observer.observe(container);
     return () => observer.disconnect();
   }, [height]);
 
   // Construct items based on mode with localized names
   const rawNodes: TreemapNode[] = useMemo(() => {
+    const categories = categoryData || CATEGORY_DATA;
+    const countries = countryData || COUNTRY_DATA;
     if (activeMode === 'category') {
-      return CATEGORY_DATA.map((c, idx) => ({
+      return categories.map((c, idx) => ({
         id: `cat-${c.category}`,
         name: translateCategory(c.category, language),
         category: c.category,
@@ -224,9 +241,10 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
         remotePct: c.remotePct,
         aiPct: c.aiPct,
         color: PBI_PALETTE[idx % PBI_PALETTE.length],
-      }));
-    } else if (activeMode === 'country') {
-      return COUNTRY_DATA.map((c, idx) => ({
+      })).filter(node => node.value > 0);
+    }
+    if (activeMode === 'country') {
+      return countries.map((c, idx) => ({
         id: `country-${c.country}`,
         name: translateCountry(c.country, language),
         country: c.country,
@@ -235,35 +253,47 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
         avgSalary: c.avgSalary,
         remotePct: c.remotePct,
         color: PBI_PALETTE[idx % PBI_PALETTE.length],
-      }));
-    } else {
-      // Cross hierarchy
-      const list: TreemapNode[] = [];
-      let colorIdx = 0;
-      CATEGORY_DATA.slice(0, 6).forEach((cat) => {
-        COUNTRY_DATA.slice(0, 4).forEach((cntry) => {
-          const val = Math.round((cat.jobs * (cntry.share / 100)));
-          if (val > 20) {
-            const catName = translateCategory(cat.category, language);
-            const cntryName = translateCountry(cntry.country, language);
-            list.push({
-              id: `cross-${cat.category}-${cntry.country}`,
-              name: `${catName}`,
-              category: cat.category,
-              country: cntry.country,
-              value: val,
-              percentage: Number(((val / (METRICS_DATA?.total_jobs || 12000)) * 100).toFixed(1)),
-              avgSalary: Math.round((cat.avgSalary + cntry.avgSalary) / 2),
-              remotePct: cat.remotePct,
-              color: PBI_PALETTE[colorIdx % PBI_PALETTE.length],
-            });
-            colorIdx++;
-          }
-        });
-      });
-      return list;
+      })).filter(node => node.value > 0);
     }
-  }, [activeMode, language]);
+
+    const pairs: Record<string, { category: string; country: string; jobs: number; salaryTotal: number; salaryCount: number; remoteCount: number }> = {};
+    records.forEach(job => {
+      const key = `${job.Job_Category}|||${job.Country}`;
+      if (!pairs[key]) pairs[key] = { category: job.Job_Category, country: job.Country, jobs: 0, salaryTotal: 0, salaryCount: 0, remoteCount: 0 };
+      const pair = pairs[key];
+      pair.jobs += 1;
+      if (typeof job.Salary_Avg_USD === 'number' && job.Salary_Avg_USD > 0) {
+        pair.salaryTotal += job.Salary_Avg_USD;
+        pair.salaryCount += 1;
+      }
+      if (job.Workplace_Modality?.toLowerCase() === 'remote' || job.Is_Remote === 'Yes') pair.remoteCount += 1;
+    });
+    const sortedPairs = Object.values(pairs).sort((a,b)=>b.jobs-a.jobs);
+    const visiblePairs = sortedPairs.slice(0, 24);
+    const otherPairs = sortedPairs.slice(24);
+    const visibleNodes: TreemapNode[] = visiblePairs.map((pair, idx) => ({
+      id: `cross-${pair.category}-${pair.country}`,
+      name: translateCategory(pair.category, language),
+      category: pair.category,
+      country: pair.country,
+      value: pair.jobs,
+      percentage: totalJobs ? Number((pair.jobs / totalJobs * 100).toFixed(1)) : 0,
+      avgSalary: pair.salaryCount ? Math.round(pair.salaryTotal / pair.salaryCount) : 0,
+      remotePct: pair.jobs ? Number((pair.remoteCount / pair.jobs * 100).toFixed(1)) : 0,
+      color: PBI_PALETTE[idx % PBI_PALETTE.length],
+    }));
+    if (otherPairs.length) {
+      const otherJobs = otherPairs.reduce((sum,pair)=>sum+pair.jobs,0);
+      visibleNodes.push({
+        id: 'cross-other',
+        name: language === 'ar' ? 'تركيبات أخرى' : 'Other combinations',
+        value: otherJobs,
+        percentage: totalJobs ? Number((otherJobs / totalJobs * 100).toFixed(1)) : 0,
+        color: '#64748b',
+      });
+    }
+    return visibleNodes;
+  }, [activeMode, language, categoryData, countryData, records, totalJobs]);
 
   // Compute squarified coordinates
   const laidOutNodes = useMemo(() => {
@@ -310,17 +340,17 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
   const isCrossFiltered = selectedCategory !== 'All' || selectedCountry !== 'All';
 
   return (
-    <div className="flex flex-col h-full w-full select-none" ref={containerRef}>
+    <div className="flex flex-col h-full w-full min-w-0 select-none" ref={containerRef}>
       {/* Power BI Treemap Header Controls & Slicers */}
       {allowDrilldown && (
         <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 gap-2 flex-wrap text-xs">
-          <div className="flex items-center space-x-1 rtl:space-x-reverse font-sans text-[11px] text-slate-500">
+          <div className="flex items-center space-x-1 rtl:space-x-reverse text-[11px] text-slate-500">
             <span className="font-semibold text-slate-700">{language === 'ar' ? 'مستوى التجميع:' : 'Hierarchy Level:'}</span>
             <span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-800 font-bold">
-              {activeMode === 'category' 
-                ? (language === 'ar' ? `القطاع التقني (${CATEGORY_DATA.length})` : `Industry Category (${CATEGORY_DATA.length})`) 
-                : activeMode === 'country' 
-                ? (language === 'ar' ? `الدولة (${COUNTRY_DATA.length})` : `Country (${COUNTRY_DATA.length})`) 
+              {activeMode === 'category'
+                ? (language === 'ar' ? `القطاع التقني (${(categoryData || CATEGORY_DATA).length})` : `Industry Category (${(categoryData || CATEGORY_DATA).length})`)
+                : activeMode === 'country'
+                ? (language === 'ar' ? `الدولة (${(countryData || COUNTRY_DATA).length})` : `Country (${(countryData || COUNTRY_DATA).length})`)
                 : (language === 'ar' ? 'القطاع × الدولة' : 'Category × Country')}
             </span>
           </div>
@@ -361,13 +391,13 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
       )}
 
       {/* Squarified Canvas Container */}
-      <div 
-        className="relative w-full rounded-[3px] overflow-hidden bg-slate-100/50 border border-slate-200"
+      <div
+        className="relative w-full min-w-0 rounded-[3px] overflow-hidden bg-slate-100/50 border border-slate-200"
         style={{ height: dimensions.height }}
         onMouseLeave={() => setHoveredNode(null)}
       >
         {laidOutNodes.map((node) => {
-          const isSelected = 
+          const isSelected =
             (node.category && selectedCategory === node.category) ||
             (node.country && selectedCountry === node.country);
           const isDimmed = isCrossFiltered && !isSelected;
@@ -428,7 +458,7 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
                 )}
 
                 {node.country && activeMode === 'cross' && showLargeLabel && (
-                  <div className="text-[9px] text-white/80 font-sans flex items-center space-x-0.5 rtl:space-x-reverse truncate mt-0.5">
+                  <div className="text-[9px] text-white/80 flex items-center space-x-0.5 rtl:space-x-reverse truncate mt-0.5">
                     <span>📍</span>
                     <span>{translateCountry(node.country, language)}</span>
                   </div>
@@ -454,7 +484,7 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
         {/* Power BI Interactive Floating Tooltip */}
         {hoveredNode && (
           <div
-            className="absolute z-30 pointer-events-none bg-slate-900/95 text-white p-2.5 rounded-[4px] shadow-lg border border-slate-700 text-xs font-sans min-w-44 max-w-64 backdrop-blur-xs"
+            className="absolute z-30 pointer-events-none bg-slate-900/95 text-white p-2.5 rounded-[4px] shadow-lg border border-slate-700 text-xs min-w-44 max-w-64 backdrop-blur-xs"
             style={{
               left: Math.min(tooltipPos.x, dimensions.width - 200),
               top: Math.min(tooltipPos.y, dimensions.height - 130),
@@ -513,10 +543,10 @@ export const PowerBITreemap: React.FC<PowerBITreemapProps> = ({
           <span>{language === 'ar' ? 'تتناسب مساحة المربع مع إجمالي عدد إعلانات الوظائف' : 'Tile area is proportional to total job postings'}</span>
         </span>
         <span className="hidden sm:inline">
-          {activeMode === 'category' 
-            ? (language === 'ar' ? `${CATEGORY_DATA.length} قطاعات وظيفية` : `${CATEGORY_DATA.length} Sectors`) 
-            : activeMode === 'country' 
-            ? (language === 'ar' ? `${COUNTRY_DATA.length} دول عالمية` : `${COUNTRY_DATA.length} Countries`) 
+          {activeMode === 'category'
+            ? (language === 'ar' ? `${(categoryData || CATEGORY_DATA).length} قطاعات وظيفية` : `${(categoryData || CATEGORY_DATA).length} Sectors`)
+            : activeMode === 'country'
+            ? (language === 'ar' ? `${(countryData || COUNTRY_DATA).length} دول عالمية` : `${(countryData || COUNTRY_DATA).length} Countries`)
             : (language === 'ar' ? 'توزيع القطاعات حسب الدول' : 'Category by Country Breakdown')}
         </span>
       </div>

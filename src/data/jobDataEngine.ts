@@ -1,5 +1,5 @@
 import { JobRecord, MarketMetrics, SkillItem } from '../types';
-import { CATEGORY_DATA, COUNTRY_DATA, SENIORITY_DATA, METRICS_DATA } from './jobData';
+import { CATEGORY_DATA, COUNTRY_DATA, SENIORITY_DATA } from './jobData';
 
 // Top companies by country
 export const COMPANIES_BY_COUNTRY: Record<string, string[]> = {
@@ -174,7 +174,7 @@ export function generateExhaustiveJobRecords(): JobRecord[] {
     const countryObj = COUNTRY_DATA.find(c => c.country === country);
     const countryWeight = countryObj ? countryObj.share / 100 : 0.1;
 
-    const countForCountry = Math.max(18, Math.round(countryWeight * 500));
+    const countForCountry = Math.max(18, Math.round(countryWeight * 7500));
 
     Object.keys(ROLE_TITLES_BY_CATEGORY).forEach((cat) => {
       const titles = ROLE_TITLES_BY_CATEGORY[cat];
@@ -218,8 +218,9 @@ export function generateExhaustiveJobRecords(): JobRecord[] {
           modality = 'On-site';
         }
 
-        // AI Role flag
-        const isAI = (cat === 'Data & AI' && rnd1 < 0.55) || (cat === 'Technology' && rnd2 < 0.12) || (title.includes('AI') || title.includes('Machine Learning'));
+        // AI Role flag (word-boundary match avoids false positives like "Retail")
+        const titleHasAi = /\b(ai|machine learning|deep learning|llm|llms|genai)\b/i.test(title);
+        const isAI = (cat === 'Data & AI' && rnd1 < 0.55) || (cat === 'Technology' && rnd2 < 0.12) || titleHasAi;
 
         // Salary estimation
         const baseCatSalary = catObj?.avgSalary || 160000;
@@ -347,12 +348,17 @@ export interface DynamicReportMetrics {
   countryDistribution: Array<{ country: string; jobs: number; share: number; avgSalary: number; isHighlighted?: boolean }>;
   seniorityDistribution: Array<{ level: string; jobs: number; share: number; avgSalary: number }>;
   modalityDistribution: Array<{ modality: string; count: number; percentage: number }>;
-  monthlyTrend: Array<{ month: string; postings: number; remote: number; ai: number; avgSalary: number }>;
+  monthlyTrend: Array<{ month: string; yearMonth: string; postings: number; remote: number; ai: number; avgSalary: number }>;
   skillsRanked: Array<{ skill: string; count: number; pct_of_jobs: number; category: string }>;
   matchingRecords: JobRecord[];
 }
 
-// Multi-Dimensional DAX Evaluation Engine (Dynamic with Custom Dataset Support)
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((a,b)=>a-b), middle = Math.floor(sorted.length/2);
+  return sorted.length % 2 ? sorted[middle] : Math.round((sorted[middle-1]+sorted[middle])/2);
+}
+
+// Multi-Dimensional DAX Evaluation Engine (one active record set for all metrics)
 export function evaluateDaxFilterEngine(filters: FilterCriteria): DynamicReportMetrics {
   const { country, category, modality, ai, seniority, search = '', customRecords } = filters;
   const activeRecords = customRecords || getActiveJobRecords();
@@ -378,76 +384,10 @@ export function evaluateDaxFilterEngine(filters: FilterCriteria): DynamicReportM
   const isGlobal = country === 'All' && category === 'All' && modality === 'All' && ai === 'All' && seniority === 'All' && search.trim() === '';
 
   // If using standard default dataset and no filters applied:
-  if (isGlobal && !isCustom) {
-    const rollingMonths = getRollingMonthList(12);
-    return {
-      totalJobs: METRICS_DATA.total_jobs,
-      totalCompanies: METRICS_DATA.total_companies,
-      totalCountries: METRICS_DATA.total_countries,
-      aiJobs: METRICS_DATA.ai_jobs,
-      aiPercentage: METRICS_DATA.ai_job_percentage,
-      nonAiJobs: METRICS_DATA.non_ai_jobs,
-      nonAiPercentage: METRICS_DATA.non_ai_job_percentage,
-      remoteJobs: METRICS_DATA.remote_jobs,
-      remotePercentage: METRICS_DATA.remote_job_percentage,
-      hybridPercentage: METRICS_DATA.hybrid_job_percentage,
-      onsitePercentage: METRICS_DATA.onsite_job_percentage,
-      avgSalary: METRICS_DATA.overall_average_salary_usd,
-      medianSalary: METRICS_DATA.overall_median_salary_usd,
-      aiAvgSalary: METRICS_DATA.ai_average_salary_usd,
-      aiMedianSalary: METRICS_DATA.ai_median_salary_usd,
-      nonAiAvgSalary: METRICS_DATA.non_ai_average_salary_usd,
-      nonAiMedianSalary: METRICS_DATA.non_ai_median_salary_usd,
-      aiSalaryPremiumPct: METRICS_DATA.ai_salary_premium_pct,
-      salaryDisclosurePct: METRICS_DATA.salary_disclosure_percentage,
-      categoryDistribution: CATEGORY_DATA.map(c => ({ ...c })),
-      countryDistribution: COUNTRY_DATA.map(c => ({ ...c })),
-      seniorityDistribution: SENIORITY_DATA.map(s => ({ ...s })),
-      modalityDistribution: [
-        { modality: 'Remote', count: 4578, percentage: 38.15 },
-        { modality: 'Hybrid', count: 4368, percentage: 36.40 },
-        { modality: 'On-site', count: 3054, percentage: 25.45 }
-      ],
-      monthlyTrend: rollingMonths.map((m, idx) => {
-        const basePostings = [840, 920, 1080, 1150, 1210, 1180, 990, 1040, 1260, 1290, 1120, 920][idx % 12];
-        return {
-          month: m.month,
-          postings: basePostings,
-          remote: Math.round(basePostings * 0.38),
-          ai: Math.round(basePostings * 0.05),
-          avgSalary: 174000 + (idx * 600)
-        };
-      }),
-      skillsRanked: [
-        { skill: 'Communication', count: 12000, pct_of_jobs: 100, category: 'Business' },
-        { skill: 'Leadership', count: 4067, pct_of_jobs: 33.9, category: 'Business' },
-        { skill: 'Excel', count: 3105, pct_of_jobs: 25.9, category: 'Business' },
-        { skill: 'Git', count: 2548, pct_of_jobs: 21.2, category: 'Technical' },
-        { skill: 'Python', count: 2450, pct_of_jobs: 20.4, category: 'Technical' },
-        { skill: 'Project Management', count: 2144, pct_of_jobs: 17.9, category: 'Business' },
-        { skill: 'SQL', count: 2037, pct_of_jobs: 17.0, category: 'Technical' },
-        { skill: 'Salesforce', count: 1401, pct_of_jobs: 11.7, category: 'Business' },
-        { skill: 'AWS', count: 1355, pct_of_jobs: 11.3, category: 'Technical' },
-        { skill: 'Docker', count: 1272, pct_of_jobs: 10.6, category: 'Technical' }
-      ],
-      matchingRecords: matched
-    };
-  }
+  // Every KPI and visual below is derived directly from matched records.
 
-  // Under active filter context OR custom dataset:
-  let totalJobs = matched.length;
-  if (!isCustom) {
-    if (country !== 'All' && category === 'All' && modality === 'All' && ai === 'All' && seniority === 'All') {
-      const cObj = COUNTRY_DATA.find(c => c.country === country);
-      if (cObj) totalJobs = cObj.jobs;
-    } else if (category !== 'All' && country === 'All' && modality === 'All' && ai === 'All' && seniority === 'All') {
-      const catObj = CATEGORY_DATA.find(c => c.category === category);
-      if (catObj) totalJobs = catObj.jobs;
-    } else {
-      const sampleRatio = matched.length / MASTER_JOB_RECORDS.length;
-      totalJobs = Math.max(matched.length, Math.round(sampleRatio * 12000));
-    }
-  }
+  // Under active filter context:
+  const totalJobs = matched.length;
 
   const uniqueCompanies = new Set(matched.map(j => j.Company)).size;
   const uniqueCountries = new Set(matched.map(j => j.Country)).size;
@@ -463,24 +403,24 @@ export function evaluateDaxFilterEngine(filters: FilterCriteria): DynamicReportM
 
   const aiCount = matched.filter(j => j.Is_AI_Job === 'Yes' || (j.Is_AI_Job as any) === true || (j.Is_AI_Job as any) === 'true').length;
   const aiPct = Number(((aiCount / matchedTotal) * 100).toFixed(1));
-  const aiJobsEstimated = Math.round((aiPct / 100) * totalJobs);
-  const nonAiJobsEstimated = totalJobs - aiJobsEstimated;
+  const aiJobsEstimated = aiCount;
+  const nonAiJobsEstimated = totalJobs - aiCount;
 
   const validSalaries = matched
     .map(j => typeof j.Salary_Avg_USD === 'number' && j.Salary_Avg_USD > 0 ? j.Salary_Avg_USD : null)
     .filter((s): s is number => s !== null)
     .sort((a, b) => a - b);
 
-  const avgSalary = validSalaries.length > 0 ? Math.round(validSalaries.reduce((a, b) => a + b, 0) / validSalaries.length) : 175000;
-  const medianSalary = validSalaries.length > 0 ? validSalaries[Math.floor(validSalaries.length / 2)] : avgSalary;
+  const avgSalary = validSalaries.length > 0 ? Math.round(validSalaries.reduce((a, b) => a + b, 0) / validSalaries.length) : 0;
+  const medianSalary = validSalaries.length > 0 ? (validSalaries.length % 2 ? validSalaries[Math.floor(validSalaries.length / 2)] : Math.round((validSalaries[validSalaries.length / 2 - 1] + validSalaries[validSalaries.length / 2]) / 2)) : 0;
 
   const aiSalaries = matched.filter(j => j.Is_AI_Job === 'Yes' || (j.Is_AI_Job as any) === true || (j.Is_AI_Job as any) === 'true').map(j => j.Salary_Avg_USD || 0).filter(s => s > 0);
   const nonAiSalaries = matched.filter(j => j.Is_AI_Job !== 'Yes' && (j.Is_AI_Job as any) !== true && (j.Is_AI_Job as any) !== 'true').map(j => j.Salary_Avg_USD || 0).filter(s => s > 0);
 
-  const aiAvg = aiSalaries.length > 0 ? Math.round(aiSalaries.reduce((a, b) => a + b, 0) / aiSalaries.length) : Math.round(avgSalary * 1.35);
-  const aiMed = aiSalaries.length > 0 ? aiSalaries[Math.floor(aiSalaries.length / 2)] : Math.round(medianSalary * 1.30);
-  const nonAiAvg = nonAiSalaries.length > 0 ? Math.round(nonAiSalaries.reduce((a, b) => a + b, 0) / nonAiSalaries.length) : Math.round(avgSalary * 0.98);
-  const nonAiMed = nonAiSalaries.length > 0 ? nonAiSalaries[Math.floor(nonAiSalaries.length / 2)] : Math.round(medianSalary * 0.96);
+  const aiAvg = aiSalaries.length > 0 ? Math.round(aiSalaries.reduce((a, b) => a + b, 0) / aiSalaries.length) : 0;
+  const aiMed = aiSalaries.length > 0 ? medianOf(aiSalaries) : 0;
+  const nonAiAvg = nonAiSalaries.length > 0 ? Math.round(nonAiSalaries.reduce((a, b) => a + b, 0) / nonAiSalaries.length) : 0;
+  const nonAiMed = nonAiSalaries.length > 0 ? medianOf(nonAiSalaries) : 0;
 
   const premiumPct = nonAiAvg > 0 ? Number((((aiAvg - nonAiAvg) / nonAiAvg) * 100).toFixed(1)) : 0;
 
@@ -499,11 +439,11 @@ export function evaluateDaxFilterEngine(filters: FilterCriteria): DynamicReportM
   const allCategories = Object.keys(catMap).length > 0 ? Object.keys(catMap) : CATEGORY_DATA.map(c => c.category);
   const categoryDistribution = allCategories.map(catName => {
     const stat = catMap[catName];
-    const rawJobs = stat ? (isCustom ? stat.jobs : Math.round((stat.jobs / matchedTotal) * totalJobs)) : 0;
+    const rawJobs = stat ? stat.jobs : 0;
     const catSalary = stat && stat.count > 0 ? Math.round(stat.sumSal / stat.count) : avgSalary;
     return {
       category: catName,
-      jobs: Math.max(1, rawJobs),
+      jobs: Math.max(0, rawJobs),
       share: Number(((rawJobs / (totalJobs || 1)) * 100).toFixed(1)),
       avgSalary: catSalary,
       isHighlighted: category !== 'All' && category.toLowerCase() === catName.toLowerCase()
@@ -525,11 +465,11 @@ export function evaluateDaxFilterEngine(filters: FilterCriteria): DynamicReportM
   const allCountries = Object.keys(countryMap).length > 0 ? Object.keys(countryMap) : COUNTRY_DATA.map(c => c.country);
   const countryDistribution = allCountries.map(cntryName => {
     const stat = countryMap[cntryName];
-    const rawJobs = stat ? (isCustom ? stat.jobs : Math.round((stat.jobs / matchedTotal) * totalJobs)) : 0;
-    const cntrySalary = stat && stat.count > 0 ? Math.round(stat.sumSal / stat.count) : avgSalary;
+    const rawJobs = stat ? stat.jobs : 0;
+    const cntrySalary = stat && stat.count > 0 ? Math.round(stat.sumSal / stat.count) : 0;
     return {
       country: cntryName,
-      jobs: Math.max(1, rawJobs),
+      jobs: Math.max(0, rawJobs),
       share: Number(((rawJobs / (totalJobs || 1)) * 100).toFixed(1)),
       avgSalary: cntrySalary,
       isHighlighted: country !== 'All' && country.toLowerCase() === cntryName.toLowerCase()
@@ -537,50 +477,54 @@ export function evaluateDaxFilterEngine(filters: FilterCriteria): DynamicReportM
   }).sort((a, b) => b.jobs - a.jobs);
 
   // Seniority breakdown
-  const senMap: Record<string, number> = {};
+  const senMap: Record<string, { jobs: number; salarySum: number; salaryCount: number }> = {};
   matched.forEach(j => {
     const sen = j.Seniority || 'Senior';
-    senMap[sen] = (senMap[sen] || 0) + 1;
+    if (!senMap[sen]) senMap[sen] = { jobs: 0, salarySum: 0, salaryCount: 0 };
+    senMap[sen].jobs += 1;
+    if (typeof j.Salary_Avg_USD === 'number' && j.Salary_Avg_USD > 0) { senMap[sen].salarySum += j.Salary_Avg_USD; senMap[sen].salaryCount += 1; }
   });
 
   const seniorityLevels = Object.keys(senMap).length > 0 ? Object.keys(senMap) : SENIORITY_DATA.map(s => s.level);
   const seniorityDistribution = seniorityLevels.map(lvl => {
-    const count = senMap[lvl] || 0;
-    const scaled = isCustom ? count : Math.round((count / matchedTotal) * totalJobs);
-    const senBaseObj = SENIORITY_DATA.find(s => s.level.toLowerCase() === lvl.toLowerCase());
+    const stat = senMap[lvl];
+    const scaled = stat?.jobs || 0;
     return {
       level: lvl,
       jobs: Math.max(0, scaled),
       share: Number(((scaled / (totalJobs || 1)) * 100).toFixed(1)),
-      avgSalary: senBaseObj ? senBaseObj.avgSalary : avgSalary
+      avgSalary: stat && stat.salaryCount ? Math.round(stat.salarySum / stat.salaryCount) : 0
     };
   }).sort((a, b) => b.jobs - a.jobs);
 
   // Monthly trend for sparkline (rolling 12 months)
-  const rollingMonths = getRollingMonthList(12);
+  const rollingMonths = getRollingMonthList(6);
   const monthlyMap: Record<string, { count: number; remote: number; ai: number; sumSal: number; salCount: number }> = {};
   
   matched.forEach(j => {
-    const m = j.Month_Name || (j.Date_Posted ? new Date(j.Date_Posted).toLocaleString('default', { month: 'short' }) : 'Jan');
-    if (!monthlyMap[m]) monthlyMap[m] = { count: 0, remote: 0, ai: 0, sumSal: 0, salCount: 0 };
-    monthlyMap[m].count += 1;
-    if (j.Workplace_Modality?.toLowerCase() === 'remote' || j.Is_Remote === 'Yes') monthlyMap[m].remote += 1;
-    if (j.Is_AI_Job === 'Yes' || (j.Is_AI_Job as any) === true || (j.Is_AI_Job as any) === 'true') monthlyMap[m].ai += 1;
-    if (j.Salary_Avg_USD) {
-      monthlyMap[m].sumSal += j.Salary_Avg_USD;
-      monthlyMap[m].salCount += 1;
+    const date = j.Date_Posted ? new Date(j.Date_Posted) : null;
+    const yearMonth = j.Year_Month || (date && !isNaN(date.getTime()) ? date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') : '');
+    if (!yearMonth) return;
+    if (!monthlyMap[yearMonth]) monthlyMap[yearMonth] = { count: 0, remote: 0, ai: 0, sumSal: 0, salCount: 0 };
+    monthlyMap[yearMonth].count += 1;
+    if (j.Workplace_Modality?.toLowerCase() === 'remote' || j.Is_Remote === 'Yes') monthlyMap[yearMonth].remote += 1;
+    if (j.Is_AI_Job === 'Yes' || (j.Is_AI_Job as any) === true || (j.Is_AI_Job as any) === 'true') monthlyMap[yearMonth].ai += 1;
+    if (typeof j.Salary_Avg_USD === 'number' && j.Salary_Avg_USD > 0) {
+      monthlyMap[yearMonth].sumSal += j.Salary_Avg_USD;
+      monthlyMap[yearMonth].salCount += 1;
     }
   });
 
   const monthlyTrend = rollingMonths.map(rm => {
-    const stat = monthlyMap[rm.month];
-    const rawJobs = stat ? (isCustom ? stat.count : Math.round((stat.count / matchedTotal) * totalJobs)) : Math.max(1, Math.round(totalJobs / 12));
-    const mRemote = stat ? (isCustom ? stat.remote : Math.round(rawJobs * (remotePct / 100))) : Math.round(rawJobs * (remotePct / 100));
-    const mAi = stat ? (isCustom ? stat.ai : Math.round(rawJobs * (aiPct / 100))) : Math.round(rawJobs * (aiPct / 100));
-    const mSalary = stat && stat.salCount > 0 ? Math.round(stat.sumSal / stat.salCount) : avgSalary;
+    const stat = monthlyMap[rm.yearMonth];
+    const rawJobs = stat ? stat.count : 0;
+    const mRemote = stat ? stat.remote : 0;
+    const mAi = stat ? stat.ai : 0;
+    const mSalary = stat && stat.salCount > 0 ? Math.round(stat.sumSal / stat.salCount) : 0;
 
     return {
       month: rm.month,
+      yearMonth: rm.yearMonth,
       postings: rawJobs,
       remote: mRemote,
       ai: mAi,
@@ -603,7 +547,7 @@ export function evaluateDaxFilterEngine(filters: FilterCriteria): DynamicReportM
   const skillsRanked = Object.entries(skillCountMap)
     .map(([skill, data]) => ({
       skill,
-      count: isCustom ? data.count : Math.round((data.count / matchedTotal) * totalJobs),
+      count: data.count,
       pct_of_jobs: Number(((data.count / matchedTotal) * 100).toFixed(1)),
       category: data.cat
     }))
@@ -612,13 +556,13 @@ export function evaluateDaxFilterEngine(filters: FilterCriteria): DynamicReportM
 
   return {
     totalJobs,
-    totalCompanies: Math.max(1, uniqueCompanies),
-    totalCountries: Math.max(1, uniqueCountries),
+    totalCompanies: uniqueCompanies,
+    totalCountries: uniqueCountries,
     aiJobs: aiJobsEstimated,
     aiPercentage: aiPct,
     nonAiJobs: nonAiJobsEstimated,
     nonAiPercentage: Number((100 - aiPct).toFixed(1)),
-    remoteJobs: isCustom ? remoteCount : Math.round(totalJobs * (remotePct / 100)),
+    remoteJobs: remoteCount,
     remotePercentage: remotePct,
     hybridPercentage: hybridPct,
     onsitePercentage: onsitePct,
@@ -629,14 +573,14 @@ export function evaluateDaxFilterEngine(filters: FilterCriteria): DynamicReportM
     nonAiAvgSalary: nonAiAvg,
     nonAiMedianSalary: nonAiMed,
     aiSalaryPremiumPct: premiumPct,
-    salaryDisclosurePct: validSalaries.length > 0 ? Number(((validSalaries.length / matchedTotal) * 100).toFixed(1)) : 68.55,
+    salaryDisclosurePct: validSalaries.length > 0 ? Number(((validSalaries.length / matchedTotal) * 100).toFixed(1)) : 0,
     categoryDistribution,
     countryDistribution,
     seniorityDistribution,
     modalityDistribution: [
-      { modality: 'Remote', count: isCustom ? remoteCount : Math.round(totalJobs * (remotePct / 100)), percentage: remotePct },
-      { modality: 'Hybrid', count: isCustom ? hybridCount : Math.round(totalJobs * (hybridPct / 100)), percentage: hybridPct },
-      { modality: 'On-site', count: isCustom ? onsiteCount : Math.round(totalJobs * (onsitePct / 100)), percentage: onsitePct }
+      { modality: 'Remote', count: remoteCount, percentage: remotePct },
+      { modality: 'Hybrid', count: hybridCount, percentage: hybridPct },
+      { modality: 'On-site', count: onsiteCount, percentage: onsitePct }
     ],
     monthlyTrend,
     skillsRanked,
@@ -676,7 +620,8 @@ export function parseCsvToJobRecords(csvText: string): JobRecord[] {
     const country = getField(row, ['country', 'nation', 'region']) || 'United States';
     const location = getField(row, ['location', 'city', 'joblocation']) || `${country}`;
     const rawSalary = getField(row, ['salaryavgusd', 'salary', 'salaryavg', 'compensation', 'pay', 'avg_salary']);
-    const salary = parseNumericSalary(rawSalary) || 165000;
+    const parsedSalary = parseNumericSalary(rawSalary);
+    const salary = parsedSalary ?? 0;
     const skills = getField(row, ['skillslist', 'skills', 'skill', 'technologies', 'keywords', 'competencies']) || 'Communication, Problem Solving';
     const datePosted = getField(row, ['dateposted', 'date', 'posteddate', 'posted', 'createdat']) || dynamicDate.dateStr;
     const isAI = isAiRole(title, category, skills);
@@ -705,9 +650,9 @@ export function parseCsvToJobRecords(csvText: string): JobRecord[] {
       Year_Month: `${parsedYear}-${String(parsedMonth).padStart(2, '0')}`,
       Quarter: `Q${Math.floor((parsedMonth - 1) / 3) + 1}`,
       Employment_Type: 'Full-Time',
-      Has_Salary: 'Yes',
-      Salary_Min_USD: Math.round(salary * 0.9),
-      Salary_Max_USD: Math.round(salary * 1.1),
+      Has_Salary: parsedSalary !== null ? 'Yes' : 'No',
+      Salary_Min_USD: parsedSalary !== null ? Math.round(salary * 0.9) : 0,
+      Salary_Max_USD: parsedSalary !== null ? Math.round(salary * 1.1) : 0,
       Salary_Avg_USD: salary,
       Skills_List: skills,
       Skill_Count: skills.split(',').length
@@ -769,6 +714,12 @@ function parseNumericSalary(val: string): number | null {
 }
 
 function isAiRole(title: string, category: string, skills: string): boolean {
-  const text = `${title} ${category} ${skills}`.toLowerCase();
-  return text.includes('ai') || text.includes('machine learning') || text.includes('deep learning') || text.includes('llm') || text.includes('pytorch') || text.includes('neural');
+  const text = `${title} ${skills}`.toLowerCase();
+  const aiPattern = /\b(ai|a\.i\.|artificial intelligence|machine learning|deep learning|ml|llm|llms|genai|openai|pytorch|tensorflow|neural|nlp|computer vision|generative)\b/;
+  if (aiPattern.test(text)) return true;
+  // Data & AI category rows only count as AI roles when the title itself is AI-centric
+  if (category.trim().toLowerCase() === 'data & ai' && /\b(data scien\w*|research scientist|ml engineer|ai engineer)\b/.test(text)) {
+    return true;
+  }
+  return false;
 }

@@ -37,6 +37,7 @@ export const KPICardWithSparkline: React.FC<KPICardWithSparklineProps> = ({
   trendLabel
 }) => {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const reactId = React.useId();
 
   // Calculate SVG dimensions and coordinate mapping
   const width = 160;
@@ -44,13 +45,16 @@ export const KPICardWithSparkline: React.FC<KPICardWithSparklineProps> = ({
   const paddingX = 4;
   const paddingY = 5;
 
-  const values = data.map(d => d.value);
+  // Guard against empty or single-point series (avoids NaN coordinates)
+  const safeData: SparklinePoint[] = data && data.length > 0 ? data : [{ month: '', value: 0 }];
+  const values = safeData.map(d => d.value);
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
   const range = maxVal - minVal || 1;
+  const stepX = safeData.length > 1 ? (width - paddingX * 2) / (safeData.length - 1) : 0;
 
-  const points = data.map((d, i) => {
-    const x = paddingX + (i / (data.length - 1)) * (width - paddingX * 2);
+  const points = safeData.map((d, i) => {
+    const x = paddingX + i * stepX;
     const y = height - paddingY - ((d.value - minVal) / range) * (height - paddingY * 2);
     return { x, y, data: d };
   });
@@ -68,8 +72,8 @@ export const KPICardWithSparkline: React.FC<KPICardWithSparklineProps> = ({
 
   const areaPath = `${linePath} L ${points[points.length - 1].x},${height} L ${points[0].x},${height} Z`;
 
-  // Unique gradient ID per card
-  const gradId = `spark-grad-${title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}`;
+  // Unique gradient ID per card (useId avoids collisions for Arabic-only titles)
+  const gradId = `spark-grad-${reactId.replace(/[^a-zA-Z0-9]/g, '')}`;
 
   // Find max point for indicator
   const maxIndex = values.indexOf(maxVal);
@@ -80,7 +84,7 @@ export const KPICardWithSparkline: React.FC<KPICardWithSparklineProps> = ({
 
   return (
     <div 
-      className={`bg-white border border-slate-200 rounded-[4px] p-3 shadow-2xs relative overflow-hidden hover:shadow-xs transition-shadow flex flex-col justify-between ${className}`}
+      className={`dashboard-kpi bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs relative overflow-hidden hover:shadow-xs transition-shadow flex flex-col justify-between ${className}`}
       style={{ borderTop: `3px solid ${accentColor}` }}
     >
       {/* Top Header Row */}
@@ -107,8 +111,8 @@ export const KPICardWithSparkline: React.FC<KPICardWithSparklineProps> = ({
       {/* Main Callout Number & Sparkline Area */}
       <div className="mt-1 flex items-end justify-between gap-2">
         <div>
-          <div className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tracking-tight flex items-baseline space-x-1 rtl:space-x-reverse">
-            <span>{value}</span>
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 tracking-tight flex items-baseline gap-1">
+            <span className="whitespace-nowrap">{value}</span>
             {subValue && <span className="text-xs font-normal text-slate-500 font-sans">{subValue}</span>}
           </div>
         </div>

@@ -6,3 +6,19 @@ coverage/
 *.log
 .env*
 !.env.example
+
+## Local visual-audit artifacts (kept out of source control)
+/bug-audit.mjs
+/fix-native-chart-bindings.mjs
+/interaction-audit*.mjs
+/migrate-native-charts.mjs
+/polish-native-charts.mjs
+/reference-style-check.mjs
+/repair-native-charts.mjs
+/theme-review.mjs
+/bug-audit.png
+/dashboard-inspect.png
+/inspect*.png
+/page-*-audit.png
+/reference-style-check.png
+/theme-review*.png

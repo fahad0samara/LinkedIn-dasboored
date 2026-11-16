@@ -1,6 +1,5 @@
 import React from 'react';
 import { Download, RotateCcw, BarChart3, Filter, Database, Globe, Calculator, FileText, Languages } from 'lucide-react';
-import { METRICS_DATA } from '../data/jobData';
 import { evaluateDaxFilterEngine, isUsingCustomDataset, getActiveDatasetName, getActiveJobRecords } from '../data/jobDataEngine';
 import { CurrencyCode, CURRENCIES } from '../utils/currency';
 import { Language, useTranslation } from '../utils/i18n';
@@ -55,12 +54,21 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       search: ''
     });
 
-    const headers = "Job_ID,Job_Title,Company,Job_Category,Seniority,Workplace_Modality,Is_Remote,Is_AI_Job,Country,Location,Date_Posted,Salary_Avg_USD,Skills_List\n";
-    const rows = result.matchingRecords.map(j => 
-      `"${j.Job_ID}","${j.Job_Title}","${j.Company}","${j.Job_Category}","${j.Seniority}","${j.Workplace_Modality}","${j.Is_Remote}","${j.Is_AI_Job}","${j.Country}","${j.Location}","${j.Date_Posted}",${j.Salary_Avg_USD || 0},"${j.Skills_List}"`
-    ).join('\n');
+    const escapeCsvCell = (value: string | number) => {
+      const str = String(value ?? '');
+      return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+    };
 
-    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(headers + rows);
+    const headers = ['Job_ID', 'Job_Title', 'Company', 'Job_Category', 'Seniority', 'Workplace_Modality', 'Is_Remote', 'Is_AI_Job', 'Country', 'Location', 'Date_Posted', 'Salary_Avg_USD', 'Skills_List'];
+    const rows = [
+      headers.map(escapeCsvCell).join(','),
+      ...result.matchingRecords.map(j => [
+        j.Job_ID, j.Job_Title, j.Company, j.Job_Category, j.Seniority, j.Workplace_Modality,
+        j.Is_Remote, j.Is_AI_Job, j.Country, j.Location, j.Date_Posted, j.Salary_Avg_USD || 0, j.Skills_List
+      ].map(escapeCsvCell).join(','))
+    ].join('\r\n');
+
+    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent('\ufeff' + rows);
     const link = document.createElement("a");
     link.setAttribute("href", csvContent);
     const filterSuffix = selectedCountry !== 'All' ? `_${selectedCountry}` : '';
@@ -71,13 +79,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     document.body.removeChild(link);
   };
 
-  const totalCount = isCustom ? activeRecords.length : METRICS_DATA.total_jobs;
-  const totalCountries = isCustom ? new Set(activeRecords.map(r => r.Country)).size : METRICS_DATA.total_countries;
-  const totalCompanies = isCustom ? new Set(activeRecords.map(r => r.Company)).size : METRICS_DATA.total_companies;
+  const totalCount = activeRecords.length;
+  const totalCountries = new Set(activeRecords.map(r => r.Country).filter(Boolean)).size;
+  const totalCompanies = new Set(activeRecords.map(r => r.Company).filter(Boolean)).size;
 
   return (
-    <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 shadow-2xs">
-      <div className="max-w-7xl mx-auto flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+    <header className="dashboard-header bg-white border-b border-slate-200 px-4 sm:px-6 py-3 shadow-2xs">
+      <div className="max-w-[1600px] mx-auto flex flex-col xl:flex-row xl:items-center justify-between gap-3">
         {/* Title & Metadata */}
         <div>
           <div className="flex items-center space-x-2.5 rtl:space-x-reverse">

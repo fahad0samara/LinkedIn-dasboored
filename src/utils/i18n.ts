@@ -101,6 +101,8 @@ export const translations = {
     kpi_aiJobs: 'وظائف الذكاء الاصطناعي والتعلم الآلي',
     kpi_aiJobsSub: 'أدوار متخصصة ونادرة',
     kpi_activeEmployers: 'الشركات النشطة',
+    kpi_remoteHybrid: 'مرونة العمل (عن بُعد + هجين)',
+    kpi_aiSpecialization: 'تخصصات الذكاء الاصطناعي',
 
     // Pinned DAX
     pinnedDaxTitle: 'مقاييس DAX المخصصة والمثبتة',
@@ -122,6 +124,11 @@ export const translations = {
     chart_demandTrendsSub: 'مخطط مساحي وخطّي • يوضح نمو الطلب الكلي ونمو وظائف الذكاء الاصطناعي',
     chart_categoryDist: 'توزيع إعلانات الوظائف حسب القطاع التقني',
     chart_categoryDistSub: 'مخطط شريطي متداخل • انقر فوق أي شريط للتعمق في تفاصيل القطاع',
+    chart_postingsByCategory: 'إعلانات الوظائف حسب القطاع',
+    chart_postingsByCountry: 'إعلانات الوظائف حسب الدولة',
+    chart_modalityDistribution: 'توزيع أنماط العمل',
+    chart_monthlyTrend: 'اتجاهات التوظيف الشهرية',
+    chart_treemap: 'خريطة توزيع الوظائف الهرمية',
     chart_topSkills: 'المهارات التقنية الأكثر طلباً في السوق',
     chart_topSkillsSub: 'مخطط شريطي أفقي • انقر على المهارة للتعمق في الوظائف المرتبطة بها',
     chart_modalityDist: 'توزيع أنماط العمل (عن بُعد، هجين، مكتبي)',
@@ -166,6 +173,9 @@ export const translations = {
     col_postingsCount: 'عدد الوظائف',
     col_marketShare: 'الحصة السوقية',
     col_growth: 'النمو السنوي',
+    filterContext: 'سياق التصفية',
+    searchPlaceholder: 'ابحث في المسميات الوظيفية أو الشركات...',
+    jobTableTitle: 'سجل شواغر الوظائف الحية (ATS)',
 
     // Drill-Through Overlay
     drill_title: 'مستكشف البيانات التفصيلي (Power BI Drill-Through)',
@@ -339,6 +349,8 @@ export const translations = {
     kpi_aiJobs: 'Specialized Machine Learning & AI',
     kpi_aiJobsSub: 'High-Demand Specialized Tiers',
     kpi_activeEmployers: 'Active Employers',
+    kpi_remoteHybrid: 'Workplace Flexibility (Remote + Hybrid)',
+    kpi_aiSpecialization: 'AI Specialization',
 
     // Pinned DAX
     pinnedDaxTitle: 'Custom Pinned DAX Measures',
@@ -360,6 +372,11 @@ export const translations = {
     chart_demandTrendsSub: 'Stacked Area + Line Visual • Total Market Demand vs. AI Surge',
     chart_categoryDist: 'Requisition Volume by Tech Specialization',
     chart_categoryDistSub: 'Interactive Bar Chart • Click any bar to drill-through into microdata',
+    chart_postingsByCategory: 'Job Postings by Industry Category',
+    chart_postingsByCountry: 'Job Postings by Country',
+    chart_modalityDistribution: 'Workplace Modality Distribution',
+    chart_monthlyTrend: 'Monthly Hiring Velocity',
+    chart_treemap: 'Job Distribution Treemap',
     chart_topSkills: 'Most In-Demand Skills & Competencies',
     chart_topSkillsSub: 'Horizontal Bar Chart • Click skill to drill-through matching jobs',
     chart_modalityDist: 'Workplace Modality Distribution (Remote / Hybrid / On-site)',
@@ -404,6 +421,9 @@ export const translations = {
     col_postingsCount: 'Postings Count',
     col_marketShare: 'Market Share',
     col_growth: 'YoY Growth',
+    filterContext: 'Filter Context',
+    searchPlaceholder: 'Search job titles or companies...',
+    jobTableTitle: 'ATS Job Postings Ledger',
 
     // Drill-Through Overlay
     drill_title: 'Power BI Drill-Through Microdata Explorer',
@@ -491,6 +511,12 @@ export const CATEGORY_TRANSLATIONS: Record<string, { ar: string; en: string }> =
   'Human Resources': { ar: 'الموارد البشرية والمواهب', en: 'Human Resources' },
   'Operations': { ar: 'العمليات وسلاسل الإمداد', en: 'Operations' },
   'Legal': { ar: 'الشؤون القانونية والامتثال', en: 'Legal' },
+  'Accounting': { ar: 'المحاسبة', en: 'Accounting' },
+  'Engineering': { ar: 'الهندسة', en: 'Engineering' },
+  'Product': { ar: 'إدارة المنتجات', en: 'Product' },
+  'Management': { ar: 'الإدارة والقيادة', en: 'Management' },
+  'Customer Support': { ar: 'دعم العملاء', en: 'Customer Support' },
+  'Administration': { ar: 'الشؤون الإدارية', en: 'Administration' },
 };
 
 export const COUNTRY_TRANSLATIONS: Record<string, { ar: string; en: string }> = {
@@ -507,6 +533,7 @@ export const COUNTRY_TRANSLATIONS: Record<string, { ar: string; en: string }> = 
   'Singapore': { ar: 'سنغافورة', en: 'Singapore' },
   'Switzerland': { ar: 'سويسرا', en: 'Switzerland' },
   'Japan': { ar: 'اليابان', en: 'Japan' },
+  'Denmark': { ar: 'الدنمارك', en: 'Denmark' },
 };
 
 export const MODALITY_TRANSLATIONS: Record<string, { ar: string; en: string }> = {
@@ -516,6 +543,8 @@ export const MODALITY_TRANSLATIONS: Record<string, { ar: string; en: string }> =
 };
 
 export const SENIORITY_TRANSLATIONS: Record<string, { ar: string; en: string }> = {
+  'Internship': { ar: 'تدريب', en: 'Internship' },
+  'Junior': { ar: 'مبتدئ', en: 'Junior' },
   'Entry Level': { ar: 'مبتدئ / خريج', en: 'Entry Level' },
   'Entry-level': { ar: 'مبتدئ / خريج', en: 'Entry-level' },
   'Mid Level': { ar: 'متوسط الخبرة', en: 'Mid Level' },
@@ -558,6 +587,26 @@ export function translateAI(ai: string, lang?: Language | string): string {
   if (ai === 'Yes') return l === 'ar' ? 'وظائف ذكاء اصطناعي فقط' : 'AI Roles Only';
   if (ai === 'No') return l === 'ar' ? 'وظائف عامة (غير ذكاء اصطناعي)' : 'Non-AI Core Only';
   return ai;
+}
+
+const MONTH_TRANSLATIONS: Record<string, { ar: string; en: string }> = {
+  Jan: { ar: 'يناير', en: 'Jan' },
+  Feb: { ar: 'فبراير', en: 'Feb' },
+  Mar: { ar: 'مارس', en: 'Mar' },
+  Apr: { ar: 'أبريل', en: 'Apr' },
+  May: { ar: 'مايو', en: 'May' },
+  Jun: { ar: 'يونيو', en: 'Jun' },
+  Jul: { ar: 'يوليو', en: 'Jul' },
+  Aug: { ar: 'أغسطس', en: 'Aug' },
+  Sep: { ar: 'سبتمبر', en: 'Sep' },
+  Oct: { ar: 'أكتوبر', en: 'Oct' },
+  Nov: { ar: 'نوفمبر', en: 'Nov' },
+  Dec: { ar: 'ديسمبر', en: 'Dec' },
+};
+
+export function translateMonth(month: string, lang?: Language | string): string {
+  const l: Language = lang === 'en' ? 'en' : 'ar';
+  return MONTH_TRANSLATIONS[month]?.[l] || month;
 }
 
 export function useTranslation(lang?: Language | string) {

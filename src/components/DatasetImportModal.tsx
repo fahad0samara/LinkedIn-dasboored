@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { 
   Upload, Database, FileText, Plus, CheckCircle2, 
-  AlertCircle, Download, Trash2, X, RefreshCw, Layers
+  AlertCircle, Download, Trash2, X
 } from 'lucide-react';
 import { JobRecord } from '../types';
 import { parseCsvToJobRecords, setCustomDataset, isUsingCustomDataset, getActiveDatasetName, getDynamicDate } from '../data/jobDataEngine';
@@ -62,31 +62,34 @@ export const DatasetImportModal: React.FC<DatasetImportModalProps> = ({
           if (Array.isArray(parsed)) {
             // Transform JSON array
             const dynamicDate = getDynamicDate(1);
-            const records: JobRecord[] = parsed.map((item, idx) => ({
-              Job_ID: item.Job_ID || item.id || `REQ-${10000 + idx}`,
-              Job_Title: item.Job_Title || item.title || 'Specialist',
-              Company: item.Company || item.company || 'Enterprise Corp',
-              Job_Category: item.Job_Category || item.category || 'Technology',
-              Seniority: item.Seniority || item.seniority || 'Senior',
-              Workplace_Modality: item.Workplace_Modality || item.modality || 'Remote',
-              Is_Remote: item.Is_Remote || (item.Workplace_Modality === 'Remote' ? 'Yes' : 'No'),
-              Is_AI_Job: item.Is_AI_Job || 'No',
-              Country: item.Country || item.country || 'United States',
-              Location: item.Location || item.location || 'United States',
-              Date_Posted: item.Date_Posted || item.date || dynamicDate.dateStr,
-              Year: item.Year || dynamicDate.year,
-              Month: item.Month || dynamicDate.month,
-              Month_Name: item.Month_Name || dynamicDate.monthName,
-              Year_Month: item.Year_Month || dynamicDate.yearMonth,
-              Quarter: item.Quarter || dynamicDate.quarter,
-              Employment_Type: item.Employment_Type || 'Full-Time',
-              Has_Salary: 'Yes',
-              Salary_Min_USD: item.Salary_Min_USD || 150000,
-              Salary_Max_USD: item.Salary_Max_USD || 200000,
-              Salary_Avg_USD: item.Salary_Avg_USD || item.salary || 175000,
-              Skills_List: item.Skills_List || item.skills || 'Communication, Problem Solving',
-              Skill_Count: (item.Skills_List || item.skills || '').split(',').length
-            }));
+            const records: JobRecord[] = parsed.map((item, idx) => {
+              const modality = item.Workplace_Modality || item.modality || 'Remote';
+              return {
+                Job_ID: item.Job_ID || item.id || `REQ-${10000 + idx}`,
+                Job_Title: item.Job_Title || item.title || 'Specialist',
+                Company: item.Company || item.company || 'Enterprise Corp',
+                Job_Category: item.Job_Category || item.category || 'Technology',
+                Seniority: item.Seniority || item.seniority || 'Senior',
+                Workplace_Modality: modality,
+                Is_Remote: item.Is_Remote || (modality === 'Remote' ? 'Yes' : 'No'),
+                Is_AI_Job: item.Is_AI_Job || 'No',
+                Country: item.Country || item.country || 'United States',
+                Location: item.Location || item.location || 'United States',
+                Date_Posted: item.Date_Posted || item.date || dynamicDate.dateStr,
+                Year: item.Year || dynamicDate.year,
+                Month: item.Month || dynamicDate.month,
+                Month_Name: item.Month_Name || dynamicDate.monthName,
+                Year_Month: item.Year_Month || dynamicDate.yearMonth,
+                Quarter: item.Quarter || dynamicDate.quarter,
+                Employment_Type: item.Employment_Type || 'Full-Time',
+                Has_Salary: 'Yes',
+                Salary_Min_USD: item.Salary_Min_USD || 150000,
+                Salary_Max_USD: item.Salary_Max_USD || 200000,
+                Salary_Avg_USD: item.Salary_Avg_USD || item.salary || 175000,
+                Skills_List: item.Skills_List || item.skills || 'Communication, Problem Solving',
+                Skill_Count: (item.Skills_List || item.skills || '').split(',').length
+              };
+            });
             setPreviewRecords(records);
           } else {
             setErrorMessage(language === 'ar' ? 'يجب أن يكون ملف JSON مصفوفة من السجلات.' : 'JSON file must be an array of job records.');

@@ -55,10 +55,9 @@ export async function fetchLiveJobs(query: string = '', category: string = 'All'
       if (data && Array.isArray(data.jobs) && data.jobs.length > 0) {
         return data.jobs.slice(0, limit).map((job: any, index: number) => {
           const title = job.title || 'Software Engineer';
-          const isAi = title.toLowerCase().includes('ai') || 
-                       title.toLowerCase().includes('machine learning') || 
-                       title.toLowerCase().includes('data') ||
-                       (job.tags && job.tags.some((t: string) => t.toLowerCase().includes('ai') || t.toLowerCase().includes('ml')));
+          const aiPattern = /\b(ai|a\.i\.|artificial intelligence|machine learning|deep learning|ml|llm|llms|genai|openai|pytorch|tensorflow|neural|nlp|data scien\w*|computer vision|generative)\b/;
+          const isAi = aiPattern.test(title.toLowerCase()) ||
+                       (job.tags && job.tags.some((tag: string) => aiPattern.test(String(tag).toLowerCase())));
           
           let derivedCategory = 'Technology';
           if (job.category) {
@@ -88,7 +87,7 @@ export async function fetchLiveJobs(query: string = '', category: string = 'All'
               salary = Math.round(nums.reduce((a: number, b: number) => a + b, 0) / nums.length);
             }
           }
-          if (salary < 40000 || salary > 500000) {
+          if (!Number.isFinite(salary) || salary < 40000 || salary > 500000) {
             salary = isAi ? 215000 : 175000;
           }
 
